@@ -10,24 +10,49 @@ export function emitLuaClient(tree: PathTreeNode, options: { clientName?: string
 	lines.push(`function ${clientName}:new(config)`);
 	lines.push("  local instance = {");
 	lines.push("    baseUrl = config.baseUrl,");
+	lines.push("    baseHeaders = config.baseHeaders or {},");
 	lines.push("    request = config.request");
 	lines.push("  }");
 	lines.push("");
 	lines.push("  setmetatable(instance, self)");
 	lines.push("");
 
-	emitNode(lines, "instance", tree, 2);
+	emitNode(lines, "instance", tree, 2, "instance");
 
 	lines.push("");
 	lines.push("  return instance");
 	lines.push("end");
 	lines.push("");
+	lines.push(`function ${clientName}:setBaseHeaders(headers)`);
+	lines.push("  self.baseHeaders = headers or {}");
+	lines.push("end");
+	lines.push("");
+	lines.push(`function ${clientName}:setBaseHeader(name, value)`);
+	lines.push("  if not self.baseHeaders then self.baseHeaders = {} end");
+	lines.push("  self.baseHeaders[name] = value");
+	lines.push("end");
+	lines.push("");
+	lines.push(`function ${clientName}:removeBaseHeader(name)`);
+	lines.push("  if not self.baseHeaders then return end");
+	lines.push("  self.baseHeaders[name] = nil");
+	lines.push("end");
+	lines.push("");
 	lines.push(`function ${clientName}:_request(options)`);
 	lines.push("  options = options or {}\n");
+	lines.push("  local headers = nil");
+	lines.push("  if self.baseHeaders ~= nil or options.headers ~= nil then");
+	lines.push("    headers = {}");
+	lines.push("    for k, v in pairs(self.baseHeaders or {}) do");
+	lines.push("      headers[k] = v");
+	lines.push("    end");
+	lines.push("    for k, v in pairs(options.headers or {}) do");
+	lines.push("      headers[k] = v");
+	lines.push("    end");
+	lines.push("  end\n");
 	lines.push("  return self.request {");
 	lines.push("    url = self.baseUrl .. options.url,");
 	lines.push("    body = options.body,");
-	lines.push("    headers = options.headers,");
+	lines.push("    headers = headers,");
 	lines.push("    binary = options.binary,");
 	lines.push("    method = options.method,");
 	lines.push("    redirect = options.redirect,");
@@ -115,7 +140,7 @@ function makeUniqueLuaParams(rawParams: string[]): { mapping: Record<string, str
 	return { mapping, ordered };
 }
 
-function emitNode(lines: string[], parentName: string, node: PathTreeNode, indentLevel: number) {
+function emitNode(lines: string[], parentName: string, node: PathTreeNode, indentLevel: number, rootRef: string) {
 	const indent = "  ".repeat(indentLevel);
 
 	for (const [key, value] of Object.entries(node)) {
@@ -124,15 +149,15 @@ function emitNode(lines: string[], parentName: string, node: PathTreeNode, inden
 
 		const childRef = luaChildRef(parentName, key);
 		lines.push(`${indent}${childRef} = {}`);
-		emitNode(lines, childRef, value.children as PathTreeNode, indentLevel);
+		emitNode(lines, childRef, value.children as PathTreeNode, indentLevel, rootRef);
 	}
 
 	if (node.__methods) {
-		emitMethods(lines, parentName, node.__methods, indentLevel);
+		emitMethods(lines, parentName, rootRef, node.__methods, indentLevel);
 	}
 }
 
-function emitMethods(lines: string[], tableName: string, methods: MethodsMap, indentLevel: number) {
+function emitMethods(lines: string[], tableName: string, rootRef: string, methods: MethodsMap, indentLevel: number) {
 	const indent = "  ".repeat(indentLevel);
 
 	for (let [method, data] of Object.entries(methods)) {
@@ -144,7 +169,7 @@ function emitMethods(lines: string[], tableName: string, methods: MethodsMap, in
 		lines.push("");
 		lines.push(`${indent}${tableName}.${method} = function(${params})`);
 		lines.push(`${indent}  options = options or {}`);
-		lines.push(`${indent}  return self:_request {`);
+		lines.push(`${indent}  return ${rootRef}:_request {`);
 		lines.push(`${indent}    url = "${buildLuaPath(data.fullPath, paramNameMap)}",`);
 		lines.push(`${indent}    method = "${method.toUpperCase()}",`);
 		lines.push(`${indent}    body = options.body,`);
