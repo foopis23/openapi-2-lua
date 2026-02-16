@@ -66,7 +66,7 @@ return self.request(request_options)
 
 1. `request_options`: { url = self.baseUrl .. options.url, body = options.body, headers = options.headers, binary = options.binary, method = options.method, redirect = options.redirect, timeout = options.timeout}
 
-## Using the generated client (sketch)
+## Using the generated client
 
 ```lua
 local Client = require("client")
