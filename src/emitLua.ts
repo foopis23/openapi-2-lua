@@ -162,12 +162,20 @@ function emitMethods(lines: string[], tableName: string, rootRef: string, method
 
 	for (let [method, data] of Object.entries(methods)) {
 		const { mapping: paramNameMap, ordered: luaParams } = makeUniqueLuaParams(data.pathParams);
-		const params = luaParams.length > 0 ? `${luaParams.join(", ")}, options` : "options";
+		const optionsArgIndex = luaParams.length + 1;
 
 		method = method.replace(/@/g, "");
 
 		lines.push("");
-		lines.push(`${indent}${tableName}.${method} = function(${params})`);
+		lines.push(`${indent}${tableName}.${method} = function(...)`);
+		lines.push(`${indent}  local __args = { ... }`);
+		lines.push(`${indent}  if __args[1] == ${tableName} then`);
+		lines.push(`${indent}    table.remove(__args, 1)`);
+		lines.push(`${indent}  end`);
+		for (let i = 0; i < luaParams.length; i++) {
+			lines.push(`${indent}  local ${luaParams[i]} = __args[${i + 1}]`);
+		}
+		lines.push(`${indent}  local options = __args[${optionsArgIndex}]`);
 		lines.push(`${indent}  options = options or {}`);
 		lines.push(`${indent}  return ${rootRef}:_request {`);
 		lines.push(`${indent}    url = "${buildLuaPath(data.fullPath, paramNameMap)}",`);
