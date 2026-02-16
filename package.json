@@ -1,0 +1,46 @@
+{
+  "name": "openapi-2-lua",
+  "version": "1.0.0",
+  "description": "CLI tool to generate a Lua client library from an OpenAPI spec",
+  "license": "ISC",
+  "type": "commonjs",
+  "keywords": [
+    "openapi",
+    "swagger",
+    "lua",
+    "client",
+    "generator",
+    "cli"
+  ],
+  "files": [
+    "dist/**",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "openapi-2-lua": "./dist/openapi-2-lua.cjs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle": "esbuild src/cli.ts --bundle --platform=node --format=cjs --outfile=dist/openapi-2-lua.cjs --banner:js=\"#!/usr/bin/env node\"",
+    "build": "npm run typecheck && npm run bundle",
+    "generate": "node dist/openapi-2-lua.cjs",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "esbuild": "^0.25.1",
+    "typescript": "^5.7.3"
+  }
+}
