@@ -1,6 +1,6 @@
 {
   "name": "openapi-2-lua",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "CLI tool to generate a Lua client library from an OpenAPI spec",
   "license": "ISC",
   "type": "commonjs",
