@@ -155,3 +155,41 @@ client.echo.post({
 	assert.equal(luaGet(captured, "body"), "hello");
 	assert.equal(luaGetNested(captured, "headers", "Content-Type"), "text/plain");
 });
+
+test("generated client appends encoded query parameters", () => {
+	const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "openapi-2-lua-"));
+	const specPath = path.resolve(__dirname, "fixtures", "openapi.json");
+	const outPath = path.join(tmpDir, "client.lua");
+
+	generateClientLua({ specPath, outPath });
+	const luaCode = fs.readFileSync(outPath, "utf8");
+
+	const captured = runLua(
+		luaCode,
+		`
+captured = nil
+
+local client = Client:new({
+  baseUrl = "https://example.test",
+  request = function(opts)
+    captured = opts
+    return opts
+  end
+})
+
+client.echo.post({
+  query = {
+    q = "hello world",
+    count = 2,
+    include = { "a", "b" },
+    enabled = true
+  }
+})
+`
+	);
+
+	assert.equal(
+		luaGet(captured, "url"),
+		"https://example.test/echo?count=2&enabled=true&include=a&include=b&q=hello%20world"
+	);
+});

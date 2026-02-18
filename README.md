@@ -66,6 +66,27 @@ return self.request(request_options)
 
 1. `request_options`: { url = self.baseUrl .. options.url, body = options.body, headers = options.headers, binary = options.binary, method = options.method, redirect = options.redirect, timeout = options.timeout}
 
+### Query Parameters
+
+Pass query parameters via `options.query` on any generated endpoint call.
+
+```lua
+client.echo.post({
+	query = {
+		q = "hello world",
+		count = 2,
+		include = { "a", "b" }
+	}
+})
+-- /echo?count=2&include=a&include=b&q=hello%20world
+```
+
+Notes:
+
+- Query keys are sorted for deterministic ordering.
+- Values are URL-encoded.
+- Array values emit repeated keys (`include=a&include=b`).
+
 ## Using the generated client
 
 ```lua
